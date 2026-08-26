@@ -1,2 +1,4 @@
-# Package init for log_compare
-print("ok")
+# -*- coding: utf-8 -*-
+"""
+LOGCOMPARE – Package Initialisation
+"""

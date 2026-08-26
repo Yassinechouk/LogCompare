@@ -1,45 +1,65 @@
 # -*- coding: utf-8 -*-
 """
-Application GUI – Analyse & Comparaison de logs
+GUI.py – Tkinter Application for LOGCOMPARE
+============================================
 
+Provides the :class:`LogCompareApp` window which lets users:
 
+  - Select a reference ``.log`` file and a folder of comparison logs.
+  - Build and colour-code a step-duration comparison table.
+  - Export results to CSV and Excel (with an embedded duration chart).
+  - Filter steps by name and toggle delta columns.
+  - Persist session preferences between launches.
 """
-from openpyxl.chart.series import Series
-from openpyxl.chart import ScatterChart, Reference
-from openpyxl.chart.axis import ChartLines
-from openpyxl.utils import get_column_letter as _gcl
-from openpyxl.chart.axis import TextAxis
-from typing import Any as _Any
-import openpyxl
-from openpyxl.styles import PatternFill, Font, Alignment
-from openpyxl.utils import get_column_letter
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk # pyright: ignore[reportPrivateImportUsage]
-import matplotlib.pyplot as plt
-import openpyxl  # noqa
-from tksheet import Sheet
-import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
-from pathlib import Path
-from typing import Optional, List, Any
-import traceback
-import time
-from collections import Counter
-import csv
 
-from models import Etape
-from prefs import load_prefs, save_prefs
-from pivot import construire_pivot
-from parsing import parse_etapes, affecter_blocs, extract_duree_test_seconds
-from constants import (
-    APP_TITLE, SIGNATURE_ENABLED, SIGNATURE_TEXT,
-    DEFAULT_THRESH_NEAR, DEFAULT_THRESH_YELLOW,
-    INCLURE_INDEX_DEFAULT, AFFICHER_DELTAS_DEFAULT,
-    COLOR_EQUAL_DARK, COLOR_NEAR_LIGHT, COLOR_WARN, COLOR_BAD, COLOR_EMPTY,
-    COLOR_REF_BG, COLOR_TOTAL_BG, COLOR_STEP_COLUMN_BG, COLOR_DELTA_BG_DEFAULT,
-    MANDATORY_COLUMNS
-)
+# ── Standard library ──────────────────────────────────────────────────────
+import csv
+import time
+import traceback
+from collections import Counter
+from pathlib import Path
+from typing import Any, List, Optional
+
+# ── Third-party ───────────────────────────────────────────────────────────
+import matplotlib.pyplot as plt
+import openpyxl
+import tkinter as tk
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk  # pyright: ignore[reportPrivateImportUsage]
+from matplotlib.figure import Figure
+from openpyxl.chart import ScatterChart, Reference
+from openpyxl.chart.axis import ChartLines, TextAxis
 from openpyxl.chart.series import Series
+from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.utils import get_column_letter
+from openpyxl.utils import get_column_letter as _gcl
+from tkinter import filedialog, messagebox, ttk
+from tksheet import Sheet
+from typing import Any as _Any
+
+# ── Internal ──────────────────────────────────────────────────────────────
+from constants import (
+    AFFICHER_DELTAS_DEFAULT,
+    APP_TITLE,
+    COLOR_BAD,
+    COLOR_DELTA_BG_DEFAULT,
+    COLOR_EMPTY,
+    COLOR_EQUAL_DARK,
+    COLOR_NEAR_LIGHT,
+    COLOR_REF_BG,
+    COLOR_STEP_COLUMN_BG,
+    COLOR_TOTAL_BG,
+    COLOR_WARN,
+    DEFAULT_THRESH_NEAR,
+    DEFAULT_THRESH_YELLOW,
+    INCLURE_INDEX_DEFAULT,
+    MANDATORY_COLUMNS,
+    SIGNATURE_ENABLED,
+    SIGNATURE_TEXT,
+)
+from models import Etape
+from parsing import affecter_blocs, extract_duree_test_seconds, parse_etapes
+from pivot import construire_pivot
+from prefs import load_prefs, save_prefs
 
 class LogCompareApp(tk.Tk):
     def __init__(self):
@@ -47,9 +67,6 @@ class LogCompareApp(tk.Tk):
         self.title(APP_TITLE)
         self.geometry("1450x860")
         self.minsize(1180, 680)
-        self.reference_path = None
-        self.logs_folder = None
-        self.output_folder = None
         self.reference_path: Optional[Path] = None
         self.reference_etapes: List[Etape] = []
         self.logs_folder: Optional[Path] = None
